@@ -17,7 +17,17 @@ let tickets = [
     messages: [
       { sender: 'user1@customer.com', content: 'I cannot access my GPU instance.', timestamp: new Date(Date.now() - 86400000).toISOString() },
       { sender: 'support', content: 'We are looking into this.', timestamp: new Date(Date.now() - 86000000).toISOString() }
-    ]
+    ],
+    customerProfile: {
+      name: 'Alice Smith',
+      email: 'user1@customer.com',
+      company: 'Acme Corp'
+    },
+    issueHistory: [
+      { status: 'open', timestamp: new Date(Date.now() - 86400000).toISOString() },
+      { status: 'pending', timestamp: new Date(Date.now() - 86000000).toISOString() }
+    ],
+    reproductionSteps: '1. Log in to dashboard. 2. Attempt to start GPU instance. 3. Observe error.'
   },
   {
     id: 2,
@@ -28,7 +38,17 @@ let tickets = [
     updatedAt: new Date(Date.now() - 1800000).toISOString(),
     messages: [
       { sender: 'user2@customer.com', content: 'Can you explain my last invoice?', timestamp: new Date(Date.now() - 43200000).toISOString() }
-    ]
+    ],
+    customerProfile: {
+      name: 'Bob Lee',
+      email: 'user2@customer.com',
+      company: 'Beta Inc.'
+    },
+    issueHistory: [
+      { status: 'open', timestamp: new Date(Date.now() - 43200000).toISOString() },
+      { status: 'pending', timestamp: new Date(Date.now() - 1800000).toISOString() }
+    ],
+    reproductionSteps: 'N/A (billing)'
   },
   {
     id: 3,
@@ -40,9 +60,50 @@ let tickets = [
     messages: [
       { sender: 'user3@customer.com', content: 'Please add more storage options.', timestamp: new Date(Date.now() - 259200000).toISOString() },
       { sender: 'support', content: 'Thanks for the feedback! We are considering it.', timestamp: new Date(Date.now() - 172800000).toISOString() }
-    ]
+    ],
+    customerProfile: {
+      name: 'Carol Jones',
+      email: 'user3@customer.com',
+      company: 'Gamma LLC'
+    },
+    issueHistory: [
+      { status: 'open', timestamp: new Date(Date.now() - 259200000).toISOString() },
+      { status: 'closed', timestamp: new Date(Date.now() - 172800000).toISOString() }
+    ],
+    reproductionSteps: 'N/A (feature request)'
   }
 ];
+// Create or update a ticket (simulate external system integration)
+app.post('/api/tickets', (req, res) => {
+  const { subject, source, customerProfile, reproductionSteps } = req.body;
+  if (!subject || !source || !customerProfile) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  // Check if a ticket for this subject/customer already exists
+  let ticket = tickets.find(t => t.subject === subject && t.customerProfile.email === customerProfile.email);
+  if (ticket) {
+    // Update existing ticket
+    ticket.updatedAt = new Date().toISOString();
+    ticket.issueHistory.push({ status: ticket.status, timestamp: ticket.updatedAt });
+    if (reproductionSteps) ticket.reproductionSteps = reproductionSteps;
+    return res.json(ticket);
+  }
+  // Create new ticket
+  const newTicket = {
+    id: tickets.length ? Math.max(...tickets.map(t => t.id)) + 1 : 1,
+    subject,
+    source,
+    status: 'open',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    messages: [],
+    customerProfile,
+    issueHistory: [{ status: 'open', timestamp: new Date().toISOString() }],
+    reproductionSteps: reproductionSteps || ''
+  };
+  tickets.push(newTicket);
+  res.status(201).json(newTicket);
+});
 
 app.get('/api/tickets', (req, res) => {
   let filtered = tickets;

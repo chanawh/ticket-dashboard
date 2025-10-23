@@ -9,6 +9,13 @@ export type Ticket = {
   createdAt: string;
   updatedAt: string;
   messages: { sender: string; content: string; timestamp: string }[];
+  customerProfile: {
+    name: string;
+    email: string;
+    company: string;
+  };
+  issueHistory: { status: string; timestamp: string }[];
+  reproductionSteps: string;
 };
 
 const TICKET_SOURCES = ['email', 'chat', 'community'] as const;
@@ -86,7 +93,26 @@ function App() {
             <div className="meta">Source: {selectedTicket.source}</div>
             <div className="meta">Status: {selectedTicket.status}</div>
             <div className="meta">Created: {new Date(selectedTicket.createdAt).toLocaleString()}</div>
+            <div className="customer-info">
+              <h3>Customer Info</h3>
+              <div>Name: {selectedTicket.customerProfile.name}</div>
+              <div>Email: {selectedTicket.customerProfile.email}</div>
+              <div>Company: {selectedTicket.customerProfile.company}</div>
+            </div>
+            <div className="issue-history">
+              <h3>Issue History</h3>
+              <ul>
+                {selectedTicket.issueHistory.map((h, i) => (
+                  <li key={i}>{h.status} at {new Date(h.timestamp).toLocaleString()}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="repro-steps">
+              <h3>Reproduction Steps</h3>
+              <div>{selectedTicket.reproductionSteps}</div>
+            </div>
             <div className="messages">
+              <h3>Messages</h3>
               {selectedTicket.messages.map((m, i) => (
                 <div key={i} className="message">
                   <b>{m.sender}</b> <span className="timestamp">{new Date(m.timestamp).toLocaleString()}</span>
