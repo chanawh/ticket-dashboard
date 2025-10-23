@@ -1,0 +1,93 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f6fa;
+}
+.dashboard {
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 320px;
+  background: #fff;
+  border-right: 1px solid #e1e1e1;
+  padding: 1rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.ticket-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.ticket-list li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+.ticket-list li.selected {
+  background: #e6f0ff;
+  font-weight: bold;
+}
+.ticket-list li .meta {
+  font-size: 0.85em;
+  color: #888;
+}
+.ticket-detail {
+  flex: 1;
+  padding: 2rem;
+  background: #f5f6fa;
+  overflow-y: auto;
+}
+.ticket-detail h2 {
+  margin-top: 0;
+}
+.messages {
+  margin: 1rem 0;
+  background: #fff;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.message {
+  margin-bottom: 1rem;
+}
+.message .timestamp {
+  color: #aaa;
+  font-size: 0.8em;
+  margin-left: 0.5em;
+}
+.respond-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.respond-box textarea {
+  min-height: 60px;
+  resize: vertical;
+  padding: 0.5rem;
+  font-size: 1em;
+}
+.respond-box button {
+  align-self: flex-end;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+}
+.respond-box button:hover {
+  background: #125ea2;
+}
