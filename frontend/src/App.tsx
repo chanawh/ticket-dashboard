@@ -31,6 +31,7 @@ const fetchTickets = async (filter: { source?: string; status?: string }) => {
   return res.json();
 };
 
+
 function App() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -38,6 +39,13 @@ function App() {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [response, setResponse] = useState('');
   const [refresh, setRefresh] = useState(0);
+  // Demo data state
+  const [demoTickets, setDemoTickets] = useState<any[]>([]);
+  const [demoCustomers, setDemoCustomers] = useState<any[]>([]);
+  // Asset search state
+  const [assetQuery, setAssetQuery] = useState('');
+  const [assetResults, setAssetResults] = useState<any[]>([]);
+  const [assetLoading, setAssetLoading] = useState(false);
 
   useEffect(() => {
     fetchTickets({ source: filterSource, status: filterStatus }).then(setTickets);
@@ -52,6 +60,26 @@ function App() {
     });
     setResponse('');
     setRefresh(r => r + 1);
+  };
+
+  // Demo data handlers
+  const loadDemoTickets = async () => {
+    const res = await fetch('http://localhost:4000/api/demo/tickets');
+    setDemoTickets(await res.json());
+  };
+  const loadDemoCustomers = async () => {
+    const res = await fetch('http://localhost:4000/api/demo/customers');
+    setDemoCustomers(await res.json());
+  };
+
+  // Asset search handler
+  const handleAssetSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAssetLoading(true);
+    setAssetResults([]);
+    const res = await fetch(`http://localhost:4000/api/assets/search?q=${encodeURIComponent(assetQuery)}`);
+    setAssetResults(await res.json());
+    setAssetLoading(false);
   };
 
   return (
@@ -85,8 +113,54 @@ function App() {
             </li>
           ))}
         </ul>
+        <hr />
+        <div>
+          <button onClick={loadDemoTickets}>Load Demo Tickets</button>
+          <button onClick={loadDemoCustomers} style={{ marginLeft: 8 }}>Load Demo Customers</button>
+        </div>
+        {demoTickets.length > 0 && (
+          <div>
+            <h3>Demo Tickets</h3>
+            <ul>
+              {demoTickets.map((t, i) => (
+                <li key={t.id || i}><b>{t.title}</b> (userId: {t.userId})</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {demoCustomers.length > 0 && (
+          <div>
+            <h3>Demo Customers</h3>
+            <ul>
+              {demoCustomers.map((c, i) => (
+                <li key={c.id || i}><b>{c.name}</b> ({c.email})</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </aside>
       <main className="ticket-detail">
+        <form onSubmit={handleAssetSearch} style={{ marginBottom: 16 }}>
+          <input
+            type="text"
+            value={assetQuery}
+            onChange={e => setAssetQuery(e.target.value)}
+            placeholder="Search system assets (GitHub repos)..."
+            style={{ width: '60%', marginRight: 8 }}
+          />
+          <button type="submit" disabled={assetLoading}>Search</button>
+        </form>
+        {assetLoading && <div>Searching assets...</div>}
+        {assetResults.length > 0 && (
+          <div>
+            <h3>Asset Search Results</h3>
+            <ul>
+              {assetResults.map((a, i) => (
+                <li key={a.id || i}><a href={a.html_url} target="_blank" rel="noopener noreferrer">{a.full_name}</a></li>
+              ))}
+            </ul>
+          </div>
+        )}
         {selectedTicket ? (
           <div>
             <h2>{selectedTicket.subject}</h2>

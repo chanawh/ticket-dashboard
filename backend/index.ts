@@ -1,9 +1,45 @@
+
 const express = require('express');
 const cors = require('cors');
+const nodeFetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Simulate external ticket/CRM integration using JSONPlaceholder
+app.get('/api/demo/tickets', async (req, res) => {
+  try {
+    const response = await nodeFetch('https://jsonplaceholder.typicode.com/posts');
+    const posts = await response.json();
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch demo tickets' });
+  }
+});
+
+app.get('/api/demo/customers', async (req, res) => {
+  try {
+    const response = await nodeFetch('https://jsonplaceholder.typicode.com/users');
+    const users = await response.json();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch demo customers' });
+  }
+});
+
+// Simulate asset search using GitHub API
+app.get('/api/assets/search', async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: 'Missing search query' });
+  try {
+    const response = await nodeFetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(q)}`);
+    const data = await response.json();
+    res.json(data.items || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to search assets' });
+  }
+});
 
 // In-memory ticket store for demo
 let tickets = [
