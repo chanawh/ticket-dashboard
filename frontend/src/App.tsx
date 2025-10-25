@@ -53,6 +53,32 @@ function App() {
   const TEAMS = ['Engineering', 'Product'];
   const ESCALATED_BY = 'supportAgent1'; // Replace with actual user if available
 
+  // Knowledge base state
+  const [kbQuery, setKbQuery] = useState('');
+  const [kbResults, setKbResults] = useState<any[]>([]);
+  const [kbLoading, setKbLoading] = useState(false);
+  const [kbSelected, setKbSelected] = useState<any | null>(null);
+  const [kbArticle, setKbArticle] = useState<{ title: string; extract: string } | null>(null);
+
+  // Knowledge base search handler
+  const handleKbSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKbLoading(true);
+    setKbResults([]);
+    setKbSelected(null);
+    setKbArticle(null);
+    const res = await fetch(`http://localhost:4000/api/kb/search?q=${encodeURIComponent(kbQuery)}`);
+    setKbResults(await res.json());
+    setKbLoading(false);
+  };
+
+  // Knowledge base article fetch
+  const fetchKbArticle = async (title: string) => {
+    setKbArticle(null);
+    const res = await fetch(`http://localhost:4000/api/kb/article?title=${encodeURIComponent(title)}`);
+    setKbArticle(await res.json());
+  };
+
   const handleEscalate = async () => {
     if (!selectedTicket || !escalationTeam) return;
     await fetch(`http://localhost:4000/api/tickets/${selectedTicket.id}/escalate`, {
@@ -157,6 +183,39 @@ function App() {
         )}
       </aside>
       <main className="ticket-detail">
+        {/* Knowledge Base Search */}
+        <form onSubmit={handleKbSearch} style={{ marginBottom: 16 }}>
+          <input
+            type="text"
+            value={kbQuery}
+            onChange={e => setKbQuery(e.target.value)}
+            placeholder="Search knowledge base (Wikipedia)..."
+            style={{ width: '60%', marginRight: 8 }}
+          />
+          <button type="submit" disabled={kbLoading}>Search KB</button>
+        </form>
+        {kbLoading && <div>Searching knowledge base...</div>}
+        {kbResults.length > 0 && (
+          <div>
+            <h3>Knowledge Base Results</h3>
+            <ul>
+              {kbResults.map((r, i) => (
+                <li key={r.pageid || i}>
+                  <a href="#" onClick={e => { e.preventDefault(); setKbSelected(r); fetchKbArticle(r.title); }}>{r.title}</a>
+                  <div style={{ fontSize: '0.9em', color: '#555' }}>{r.snippet.replace(/(<([^>]+)>)/gi, '')}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {kbArticle && (
+          <div style={{ marginTop: 16 }}>
+            <h3>{kbArticle.title}</h3>
+            <div dangerouslySetInnerHTML={{ __html: kbArticle.extract }} />
+          </div>
+        )}
+
+        {/* Asset Search (existing) */}
         <form onSubmit={handleAssetSearch} style={{ marginBottom: 16 }}>
           <input
             type="text"

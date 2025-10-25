@@ -3,8 +3,7 @@ console.log('Starting backend...');
 // Import dependencies
 const express = require('express');
 const cors = require('cors');
-const nodeFetch = (...args) =>
-  import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const nodeFetch = require('node-fetch');
 
 // Initialize app
 const app = express();
@@ -41,7 +40,7 @@ app.get('/api/demo/customers', async (req, res) => {
 
 // Simulate asset search using GitHub API
 app.get('/api/assets/search', async (req, res) => {
-  const { q } = req.query;
+  const q = String(req.query.q || '');
   if (!q) return res.status(400).json({ error: 'Missing search query' });
   try {
     const response = await nodeFetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(q)}`);
@@ -49,6 +48,39 @@ app.get('/api/assets/search', async (req, res) => {
     res.json(data.items || []);
   } catch (err) {
     res.status(500).json({ error: 'Failed to search assets' });
+  }
+});
+// Knowledge base: Search Wikipedia articles
+app.get('/api/kb/search', async (req, res) => {
+  const q = String(req.query.q || '');
+  if (!q) return res.status(400).json({ error: 'Missing search query' });
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json`;
+    const response = await nodeFetch(url);
+    const data = await response.json();
+    res.json(data.query.search);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to search Wikipedia' });
+  }
+});
+
+// Knowledge base: Get Wikipedia article extract
+app.get('/api/kb/article', async (req, res) => {
+  const title = String(req.query.title || '');
+  if (!title) return res.status(400).json({ error: 'Missing article title' });
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&titles=${encodeURIComponent(title)}&format=json`;
+    const response = await nodeFetch(url);
+    const data = await response.json();
+    const pages = data.query.pages;
+    const pageArr = Object.values(pages);
+    const page = pageArr[0] as { title?: string; extract?: string };
+    if (!page || !page.title || !page.extract) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    res.json({ title: page.title, extract: page.extract });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch Wikipedia article' });
   }
 });
 
@@ -171,27 +203,9 @@ app.get('/api/tickets', (req, res) => {
   res.json(filtered);
 });
 
-// Removed the extra "});" that was causing the syntax error.
-// Assuming this route is for GET /api/tickets/:id
 app.get('/api/tickets/:id', (req, res) => {
   const ticket = tickets.find(t => t.id === Number(req.params.id));
   if (!ticket) return res.status(404).json({ error: 'Not found' });
-  res.json(ticket);
-});
-
-// Add response to ticket messages
-app.post('/api/tickets/:id/respond', (req, res) => {
-  const ticket = tickets.find(t => t.id === Number(req.params.id));
-  if (!ticket) return res.status(404).json({ error: 'Not found' });
-  const { content, sender } = req.body;
-  if (!content) return res.status(400).json({ error: 'No response content provided' });
-  ticket.messages = ticket.messages || [];
-  ticket.messages.push({
-    sender: sender || 'support',
-    content,
-    timestamp: new Date().toISOString()
-  });
-  ticket.updatedAt = new Date().toISOString();
   res.json(ticket);
 });
 
