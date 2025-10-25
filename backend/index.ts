@@ -171,9 +171,27 @@ app.get('/api/tickets', (req, res) => {
   res.json(filtered);
 });
 
+// Removed the extra "});" that was causing the syntax error.
+// Assuming this route is for GET /api/tickets/:id
 app.get('/api/tickets/:id', (req, res) => {
   const ticket = tickets.find(t => t.id === Number(req.params.id));
   if (!ticket) return res.status(404).json({ error: 'Not found' });
+  res.json(ticket);
+});
+
+// Add response to ticket messages
+app.post('/api/tickets/:id/respond', (req, res) => {
+  const ticket = tickets.find(t => t.id === Number(req.params.id));
+  if (!ticket) return res.status(404).json({ error: 'Not found' });
+  const { content, sender } = req.body;
+  if (!content) return res.status(400).json({ error: 'No response content provided' });
+  ticket.messages = ticket.messages || [];
+  ticket.messages.push({
+    sender: sender || 'support',
+    content,
+    timestamp: new Date().toISOString()
+  });
+  ticket.updatedAt = new Date().toISOString();
   res.json(ticket);
 });
 
