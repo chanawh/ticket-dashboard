@@ -5,7 +5,7 @@ export type Ticket = {
   id: number;
   subject: string;
   source: 'email' | 'chat' | 'community';
-  status: 'open' | 'pending' | 'closed';
+  status: 'open' | 'pending' | 'closed' | 'escalated';
   createdAt: string;
   updatedAt: string;
   messages: { sender: string; content: string; timestamp: string }[];
@@ -16,6 +16,8 @@ export type Ticket = {
   };
   issueHistory: { status: string; timestamp: string }[];
   reproductionSteps: string;
+  assignedTeam?: string | null;
+  escalationHistory?: { team: string; escalatedBy: string; timestamp: string }[];
 };
 
 const TICKET_SOURCES = ['email', 'chat', 'community'] as const;
@@ -46,6 +48,21 @@ function App() {
   const [assetQuery, setAssetQuery] = useState('');
   const [assetResults, setAssetResults] = useState<any[]>([]);
   const [assetLoading, setAssetLoading] = useState(false);
+  // Escalation UI state
+  const [escalationTeam, setEscalationTeam] = useState('');
+  const TEAMS = ['Engineering', 'Product'];
+  const ESCALATED_BY = 'supportAgent1'; // Replace with actual user if available
+
+  const handleEscalate = async () => {
+    if (!selectedTicket || !escalationTeam) return;
+    await fetch(`http://localhost:4000/api/tickets/${selectedTicket.id}/escalate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ team: escalationTeam }),
+    });
+    setEscalationTeam('');
+    setRefresh(r => r + 1);
+  };
 
   useEffect(() => {
     fetchTickets({ source: filterSource, status: filterStatus }).then(setTickets);
@@ -166,6 +183,7 @@ function App() {
             <h2>{selectedTicket.subject}</h2>
             <div className="meta">Source: {selectedTicket.source}</div>
             <div className="meta">Status: {selectedTicket.status}</div>
+        <div className="meta">Assigned Team: {selectedTicket.assignedTeam ? selectedTicket.assignedTeam : 'None'}</div>
             <div className="meta">Created: {new Date(selectedTicket.createdAt).toLocaleString()}</div>
             <div className="customer-info">
               <h3>Customer Info</h3>
@@ -185,6 +203,26 @@ function App() {
               <h3>Reproduction Steps</h3>
               <div>{selectedTicket.reproductionSteps}</div>
             </div>
+            <div className="escalation-box">
+              <h3>Escalate Ticket</h3>
+              <select value={escalationTeam} onChange={e => setEscalationTeam(e.target.value)}>
+                <option value="">Select team...</option>
+                {TEAMS.map(team => (
+                  <option key={team} value={team}>{team}</option>
+                ))}
+              </select>
+              <button onClick={handleEscalate} disabled={!escalationTeam}>Escalate</button>
+            </div>
+            {selectedTicket.escalationHistory && selectedTicket.escalationHistory.length > 0 && (
+              <div className="escalation-history">
+                <h3>Escalation History</h3>
+                <ul>
+                  {selectedTicket.escalationHistory.map((h, i) => (
+                    <li key={i}>{h.team} by {h.escalatedBy} at {new Date(h.timestamp).toLocaleString()}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="messages">
               <h3>Messages</h3>
               {selectedTicket.messages.map((m, i) => (

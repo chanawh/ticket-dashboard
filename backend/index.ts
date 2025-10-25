@@ -1,11 +1,22 @@
+console.log('Starting backend...');
 
+// Import dependencies
 const express = require('express');
 const cors = require('cors');
-const nodeFetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const nodeFetch = (...args) =>
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
+// Initialize app
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Set up port and start server
+const PORT = 4000;
+app.listen(PORT, () => {
+  console.log(`Backend API running on port ${PORT}`);
+});
+
 
 // Simulate external ticket/CRM integration using JSONPlaceholder
 app.get('/api/demo/tickets', async (req, res) => {
@@ -63,7 +74,9 @@ let tickets = [
       { status: 'open', timestamp: new Date(Date.now() - 86400000).toISOString() },
       { status: 'pending', timestamp: new Date(Date.now() - 86000000).toISOString() }
     ],
-    reproductionSteps: '1. Log in to dashboard. 2. Attempt to start GPU instance. 3. Observe error.'
+    reproductionSteps: '1. Log in to dashboard. 2. Attempt to start GPU instance. 3. Observe error.',
+    assignedTeam: null,
+    escalationHistory: []
   },
   {
     id: 2,
@@ -84,7 +97,9 @@ let tickets = [
       { status: 'open', timestamp: new Date(Date.now() - 43200000).toISOString() },
       { status: 'pending', timestamp: new Date(Date.now() - 1800000).toISOString() }
     ],
-    reproductionSteps: 'N/A (billing)'
+    reproductionSteps: 'N/A (billing)',
+    assignedTeam: null,
+    escalationHistory: []
   },
   {
     id: 3,
@@ -106,7 +121,9 @@ let tickets = [
       { status: 'open', timestamp: new Date(Date.now() - 259200000).toISOString() },
       { status: 'closed', timestamp: new Date(Date.now() - 172800000).toISOString() }
     ],
-    reproductionSteps: 'N/A (feature request)'
+    reproductionSteps: 'N/A (feature request)',
+    assignedTeam: null,
+    escalationHistory: []
   }
 ];
 // Create or update a ticket (simulate external system integration)
@@ -135,7 +152,9 @@ app.post('/api/tickets', (req, res) => {
     messages: [],
     customerProfile,
     issueHistory: [{ status: 'open', timestamp: new Date().toISOString() }],
-    reproductionSteps: reproductionSteps || ''
+    reproductionSteps: reproductionSteps || '',
+    assignedTeam: null,
+    escalationHistory: []
   };
   tickets.push(newTicket);
   res.status(201).json(newTicket);
@@ -158,18 +177,27 @@ app.get('/api/tickets/:id', (req, res) => {
   res.json(ticket);
 });
 
-app.post('/api/tickets/:id/respond', (req, res) => {
+app.post('/api/tickets/:id/escalate', (req, res) => {
   const ticket = tickets.find(t => t.id === Number(req.params.id));
   if (!ticket) return res.status(404).json({ error: 'Not found' });
-  const { content } = req.body;
-  if (!content) return res.status(400).json({ error: 'No content' });
-  ticket.messages.push({ sender: 'support', content, timestamp: new Date().toISOString() });
+  const { team, escalatedBy } = req.body;
+  if (!team) return res.status(400).json({ error: 'No team specified' });
+  ticket.assignedTeam = team;
+  ticket.status = 'escalated';
   ticket.updatedAt = new Date().toISOString();
-  ticket.status = 'pending';
+  // Optional enhancement: track escalation history
+  ticket.escalationHistory = ticket.escalationHistory || [];
+  ticket.escalationHistory.push({
+    team,
+    escalatedBy: escalatedBy || 'supportAgent',
+    timestamp: new Date().toISOString()
+  });
+  // Optional enhancement: notify assigned team
+  notifyTeam(team, ticket);
   res.json(ticket);
 });
 
-const PORT = 4000;
-app.listen(PORT, () => {
-  console.log(`Backend API running on port ${PORT}`);
-});
+function notifyTeam(team, ticket) {
+  // TODO: Integrate with email/Slack/other system
+  console.log(`Notify ${team}: Ticket #${ticket.id} escalated.`);
+}
